@@ -1,3 +1,10 @@
+#!/bin/bash
+
+echo "=== OPTIMIZING CODE AND REMOVING DUPLICATES ==="
+
+# Создаем оптимизированную версию FetchWildberriesData команды
+echo "1. Creating optimized FetchWildberriesData command..."
+cat > app/Console/Commands/FetchWildberriesData.php << 'EOF'
 <?php
 
 namespace App\Console\Commands;
@@ -171,3 +178,20 @@ class FetchWildberriesData extends Command
         $this->info(ucfirst($type) . ": {$successCount} saved, {$errorCount} errors");
     }
 }
+EOF
+
+echo "2. Checking for duplicate command files..."
+find app/Console/Commands -name "*.php" -type f | while read file; do
+    basename=$(basename "$file")
+    count=$(find app/Console/Commands -name "$basename" | wc -l)
+    if [ $count -gt 1 ]; then
+        echo "Found duplicate: $basename"
+        # Оставляем только первый файл
+        find app/Console/Commands -name "$basename" | tail -n +2 | while read duplicate; do
+            echo "Removing duplicate: $duplicate"
+            rm "$duplicate"
+        done
+    fi
+done
+
+echo "Code optimization completed!"
