@@ -1,3 +1,19 @@
+#!/bin/bash
+
+echo "=== APPLYING FINAL FIXES ==="
+
+# 1. Исправляем проблему с stocks - делаем quantity_full nullable
+echo "1. Fixing stocks table structure..."
+docker compose exec db mysql -u wb_user -pwb_password wb_sale -e "
+ALTER TABLE stocks MODIFY quantity_full int DEFAULT NULL;
+ALTER TABLE stocks MODIFY quantity_not_in_orders int DEFAULT NULL;
+ALTER TABLE stocks MODIFY in_way_to_client int DEFAULT NULL;
+ALTER TABLE stocks MODIFY in_way_from_client int DEFAULT NULL;
+"
+
+# 2. Обновляем основной FetchWildberriesData с исправлениями из fix_sales_loading
+echo "2. Updating main FetchWildberriesData command with fixes..."
+cat > app/Console/Commands/FetchWildberriesData.php << 'EOF'
 <?php
 
 namespace App\Console\Commands;
@@ -317,3 +333,13 @@ class FetchWildberriesData extends Command
         return false;
     }
 }
+EOF
+
+echo "3. Testing fixed commands..."
+docker compose exec app php artisan wb:fetch sales --dateFrom=2025-10-06 --account=1
+
+echo ""
+echo "4. Testing stocks with fixed structure..."
+docker compose exec app php artisan wb:fetch stocks --dateFrom=2025-10-07 --account=1
+
+echo "Final fixes applied!"

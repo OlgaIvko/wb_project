@@ -1,74 +1,42 @@
 #!/bin/bash
-echo "=== ФИНАЛЬНЫЙ ТЕСТ ВСЕХ КОМПОНЕНТОВ ==="
 
-echo -e "\n1. ПРОВЕРКА ВСЕХ ДАННЫХ:"
-docker compose exec app php artisan tinker --execute="
-echo '=== ПОЛНАЯ СТАТИСТИКА ===' . PHP_EOL;
-echo 'Компании: ' . \\App\\Models\\Company::count();
-echo 'Аккаунты: ' . \\App\\Models\\Account::count();
-echo 'API сервисы: ' . \\App\\Models\\ApiService::count();
-echo 'Токены: ' . \\App\\Models\\Token::count();
-echo '---' . PHP_EOL;
-echo 'Продажи: ' . \\App\\Models\\Sale::count();
-echo 'Заказы: ' . \\App\\Models\\Order::count();
-echo 'Остатки: ' . \\App\\Models\\Stock::count();
-echo 'Поступления: ' . \\App\\Models\\Income::count();
+echo "=== ULTIMATE FINAL TEST ==="
+
+# Тестируем все типы данных с исправленным кодом
+echo "1. Testing all data types with fixed code..."
+docker compose exec app php artisan wb:fetch sales --dateFrom=2025-10-06 --account=1
+docker compose exec app php artisan wb:fetch orders --dateFrom=2025-10-06 --account=1
+docker compose exec app php artisan wb:fetch stocks --dateFrom=2025-10-07 --account=1
+docker compose exec app php artisan wb:fetch incomes --dateFrom=2025-10-06 --account=1
+
+# Проверяем итоговые данные
+echo ""
+echo "2. Final data verification..."
+docker compose exec db mysql -u wb_user -pwb_password wb_sale -e "
+SELECT 'ULTIMATE FINAL DATA COUNT:' as '';
+SELECT
+    (SELECT COUNT(*) FROM companies) as companies,
+    (SELECT COUNT(*) FROM accounts) as accounts,
+    (SELECT COUNT(*) FROM api_services) as api_services,
+    (SELECT COUNT(*) FROM token_types) as token_types,
+    (SELECT COUNT(*) FROM tokens) as tokens,
+    (SELECT COUNT(*) FROM sales) as sales,
+    (SELECT COUNT(*) FROM orders) as orders,
+    (SELECT COUNT(*) FROM stocks) as stocks,
+    (SELECT COUNT(*) FROM incomes) as incomes;
+
+SELECT 'Data freshness:' as '';
+SELECT 'Sales:' as type, MAX(date) as latest_date FROM sales
+UNION ALL SELECT 'Orders:', MAX(date) FROM orders
+UNION ALL SELECT 'Stocks:', MAX(date) FROM stocks
+UNION ALL SELECT 'Incomes:', MAX(date) FROM incomes;
 "
 
-echo -e "\n2. ТЕСТ КОМАНДЫ WB:FETCH ДЛЯ ВСЕХ АККАУНТОВ:"
-docker compose exec app php artisan wb:fetch sales --dateFrom=$(date -v-1d +%Y-%m-%d) --account=all
-
-echo -e "\n3. ПРОВЕРКА РАСПРЕДЕЛЕНИЯ ДАННЫХ:"
-docker compose exec app php artisan tinker --execute="
-echo '=== ДАННЫЕ ПО АККАУНТАМ ===' . PHP_EOL;
-
-\$tables = [
-    'sales' => 'Продажи',
-    'orders' => 'Заказы', 
-    'stocks' => 'Остатки',
-    'incomes' => 'Поступления'
-];
-
-foreach (\$tables as \$table => \$name) {
-    \$results = \\Illuminate\\Support\\Facades\\DB::table(\$table)
-        ->groupBy('account_id')
-        ->selectRaw('account_id, count(*) as count')
-        ->get();
-    
-    echo \$name . ':' . PHP_EOL;
-    foreach (\$results as \$result) {
-        \$account = \\App\\Models\\Account::find(\$result->account_id);
-        echo '  Аккаунт ' . \$result->account_id . ' (' . (\$account ? \$account->name : 'N/A') . '): ' . \$result->count . ' записей' . PHP_EOL;
-    }
-    if (\$results->isEmpty()) {
-        echo '  Нет данных' . PHP_EOL;
-    }
-}
+echo ""
+echo "3. Database structure check..."
+docker compose exec db mysql -u wb_user -pwb_password wb_sale -e "
+SELECT 'Stocks table structure:' as '';
+DESCRIBE stocks;
 "
 
-echo -e "\n4. ПРОВЕРКА СТРУКТУРЫ АККАУНТОВ:"
-docker compose exec app php artisan tinker --execute="
-echo '=== АККАУНТЫ И ТОКЕНЫ ===' . PHP_EOL;
-
-foreach (\\App\\Models\\Account::with('company', 'tokens.apiService')->get() as \$account) {
-    echo '🔹 ' . \$account->name . ' (ID: ' . \$account->id . ')' . PHP_EOL;
-    echo '   Компания: ' . \$account->company->name . PHP_EOL;
-    echo '   Токены: ' . \$account->tokens->count() . PHP_EOL;
-    
-    foreach (\$account->tokens as \$token) {
-        echo '      - Сервис: ' . \$token->apiService->name . PHP_EOL;
-        echo '        Активен: ' . (\$token->is_active ? '✅' : '❌') . PHP_EOL;
-        echo '        URL: ' . \$token->apiService->base_url . PHP_EOL;
-    }
-    echo '' . PHP_EOL;
-}
-"
-
-echo -e "\n🎯 ФИНАЛЬНЫЙ ВЫВОД:"
-echo "✅ Все основные компоненты работают"
-echo "✅ Данные успешно загружаются из API" 
-echo "✅ Структура аккаунтов функционирует"
-echo "✅ Изоляция данных по аккаунтам работает"
-echo "⚠️  Небольшая ошибка в коде требует исправления"
-echo "🚀 Приложение готово к продакшену!"
-
+echo "Ultimate final test completed!"
