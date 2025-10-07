@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    container_name: wb_app
+    working_dir: /var/www
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3307
+      - DB_DATABASE=wb_sale
+      - DB_USERNAME=wb_user
+      - DB_PASSWORD=wb_password
+    depends_on:
+      - db
+    volumes:
+      - .:/var/www
+    command: sleep infinity
+
+  db:
+    image: mysql:8.0
+    container_name: wb_db
+    environment:
+      MYSQL_DATABASE: wb_sale
+      MYSQL_USER: wb_user
+      MYSQL_PASSWORD: wb_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3307:3307"
+    volumes:
+      - db_data:/var/lib/mysql
+    command: >
+      --port=3307
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+
+volumes:
+  db_data:

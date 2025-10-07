@@ -1,0 +1,21 @@
+
+
+# services:
+#   app:
+#     volumes:
+#       - ./:/var/www
+#       - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+#       - ./storage/logs:/var/www/storage/logs
+#     environment:
+#       - APP_DEBUG=true
+#       - APP_ENV=local
+
+#   db:
+#     ports:
+#       - "3307:3306"
+#     environment:
+#       - MYSQL_ROOT_PASSWORD=root_password
+
+#   nginx:
+#     ports:
+#       - "8000:80"
